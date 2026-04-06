@@ -130,6 +130,75 @@
 
     .hero-cta:hover { opacity: 0.85; }
 
+    /* WAITLIST FORM */
+    .waitlist-form {
+      margin-top: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 400px;
+    }
+
+    .waitlist-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gray);
+      margin-bottom: 4px;
+    }
+
+    .waitlist-form input {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      padding: 14px 16px;
+      border-radius: 4px;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+
+    .waitlist-form input::placeholder { color: #4B5563; }
+    .waitlist-form input:focus { border-color: var(--red); }
+
+    .waitlist-submit {
+      background: var(--red);
+      color: var(--white);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border: none;
+      padding: 16px 32px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      width: 100%;
+    }
+
+    .waitlist-submit:hover { opacity: 0.85; }
+    .waitlist-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .waitlist-success {
+      color: var(--red);
+      font-size: 13px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      display: none;
+      margin-top: 8px;
+    }
+
+    .waitlist-error {
+      color: #EF4444;
+      font-size: 13px;
+      display: none;
+      margin-top: 4px;
+    }
+
     .hero-divider {
       width: 60px;
       height: 3px;
@@ -414,6 +483,18 @@
       <h1>Identity is a <em>standard.</em><br>Not a goal.</h1>
       <p class="hero-sub">DRIVEN is a daily execution system for athletes, coaches, and high performers. It enforces alignment between who you say you are and what you actually do.</p>
       <a href="https://apps.apple.com/app/driven" class="hero-cta">Download on the App Store</a>
+
+      <!-- WAITLIST FORM -->
+      <div style="margin-top: 48px;">
+        <p class="waitlist-label">Join the Waitlist</p>
+        <form class="waitlist-form" id="waitlistForm" onsubmit="submitWaitlist(event)">
+          <input type="text" id="waitlistName" name="name" placeholder="Your name" autocomplete="given-name" />
+          <input type="email" id="waitlistEmail" name="email" placeholder="Your email" required autocomplete="email" />
+          <button type="submit" class="waitlist-submit" id="waitlistSubmit">Get Early Access</button>
+          <p class="waitlist-success" id="waitlistSuccess">You're on the list. We'll be in touch.</p>
+          <p class="waitlist-error" id="waitlistError">Something went wrong. Try again.</p>
+        </form>
+      </div>
     </section>
 
     <div class="divider"></div>
@@ -560,6 +641,46 @@ encouragement, this isn't the app you're looking for.</p>
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.getElementById(id).classList.add('active');
       window.scrollTo(0, 0);
+    }
+
+    async function submitWaitlist(event) {
+      event.preventDefault();
+      const name = document.getElementById('waitlistName').value.trim();
+      const email = document.getElementById('waitlistEmail').value.trim();
+      const btn = document.getElementById('waitlistSubmit');
+      const successEl = document.getElementById('waitlistSuccess');
+      const errorEl = document.getElementById('waitlistError');
+
+      if (!email) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      successEl.style.display = 'none';
+      errorEl.style.display = 'none';
+
+      try {
+        const res = await fetch(
+          'https://us-central1-driven-prod-99f9d.cloudfunctions.net/addToWaitlist',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: { name, email } }),
+          }
+        );
+        const json = await res.json();
+        if (res.ok && (json.result?.success || json.success)) {
+          successEl.style.display = 'block';
+          document.getElementById('waitlistForm').reset();
+        } else {
+          throw new Error(json.error?.message || 'Unknown error');
+        }
+      } catch (err) {
+        console.error('Waitlist error:', err);
+        errorEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Get Early Access';
+      }
     }
   </script>
 
